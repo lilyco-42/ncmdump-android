@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "NCM 解密器",
+    "subtitle": "一键解密网易云音乐 .ncm 文件"
+  },
+  "button": {
+    "selectFiles": "选择 NCM 文件",
+    "clear": "清空",
+    "decryptAll": "全部解密",
+    "cancel": "取消",
+    "remove": "移除"
+  },
+  "status": {
+    "pending": "待解密",
+    "decrypting": "解密中...",
+    "success": "已完成",
+    "error": "解密失败"
+  },
+  "stats": {
+    "total": "总计",
+    "pending": "待处理",
+    "done": "成功",
+    "failed": "失败"
+  },
+  "message": {
+    "noFiles": "请选择要解密的 .ncm 文件",
+    "decryptComplete": "解密完成！",
+    "decrypted": "解密成功: {0}",
+    "failed": "解密失败: {0}",
+    "decryptingHint": "正在解密..."
+  },
+  "label": {
+    "outputDir": "输出目录"
+  }
+}

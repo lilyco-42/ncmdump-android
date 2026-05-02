@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "NCM Decryptor",
+    "subtitle": "Decrypt NetEase Cloud Music .ncm files"
+  },
+  "button": {
+    "selectFiles": "Select NCM Files",
+    "clear": "Clear",
+    "decryptAll": "Decrypt All",
+    "cancel": "Cancel",
+    "remove": "Remove"
+  },
+  "status": {
+    "pending": "Pending",
+    "decrypting": "Decrypting...",
+    "success": "Done",
+    "error": "Failed"
+  },
+  "stats": {
+    "total": "Total",
+    "pending": "Pending",
+    "done": "Done",
+    "failed": "Failed"
+  },
+  "message": {
+    "noFiles": "Select .ncm files to decrypt",
+    "decryptComplete": "Decryption complete!",
+    "decrypted": "Decrypted: {0}",
+    "failed": "Failed: {0}",
+    "decryptingHint": "Decrypting..."
+  },
+  "label": {
+    "outputDir": "Output Directory"
+  }
+}
