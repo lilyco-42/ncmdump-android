@@ -32,6 +32,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 
 private val Purple40 = Color(0xFF6650a4)
 private val PurpleGrey40 = Color(0xFF625b71)
@@ -44,6 +47,22 @@ class MainActivity : ComponentActivity() {
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
             viewModel.addFiles(uris)
+        }
+    }
+
+    private val importTranslationLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.importTranslation(uri)
+        }
+    }
+
+    private val createTemplateLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.generateTemplate(this, uri)
         }
     }
 
@@ -68,6 +87,8 @@ class MainActivity : ComponentActivity() {
                 MainScreen(
                     viewModel = viewModel,
                     onPickFiles = { filePickerLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
+                    onImportTranslation = { importTranslationLauncher.launch(arrayOf("application/json", "*/*")) },
+                    onGenerateTemplate = { createTemplateLauncher.launch("translation_template.json") },
                 )
             }
         }
@@ -226,6 +247,68 @@ class MainViewModel(context: android.content.Context) {
         }
     }
 
+    var snackbarMessage by mutableStateOf<String?>(null)
+        private set
+
+    fun importTranslation(uri: Uri) {
+        val code = TranslationService.importTranslation(uri)
+        if (code != null) {
+            TranslationService.translator.setLanguage(code)
+            snackbarMessage = tr("translation.importSuccess", code)
+        } else {
+            snackbarMessage = tr("translation.importFailed")
+        }
+    }
+
+    fun generateTemplate(context: android.content.Context, uri: Uri) {
+        try {
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                val template = buildTranslationTemplate()
+                output.write(template.toByteArray(StandardCharsets.UTF_8))
+            }
+            snackbarMessage = tr("translation.templateGenerated")
+        } catch (e: Exception) {
+            snackbarMessage = tr("translation.templateFailed")
+        }
+    }
+
+    private fun buildTranslationTemplate(): String {
+        val keys = listOf(
+            "app.name", "app.subtitle",
+            "button.selectFiles", "button.clear", "button.decryptAll",
+            "button.cancel", "button.remove",
+            "status.pending", "status.decrypting", "status.success", "status.error",
+            "stats.total", "stats.pending", "stats.done", "stats.failed",
+            "message.noFiles", "message.decryptComplete",
+            "message.decrypted", "message.failed", "message.decryptingHint",
+            "label.outputDir",
+            "lang.zh", "lang.en",
+        )
+        val sb = StringBuilder()
+        sb.appendLine("{")
+        // Group by prefix for prettier output
+        val grouped = keys.groupBy { it.substringBefore(".") }
+        val groupEntries = grouped.entries.toList()
+        for ((gIdx, entry) in groupEntries.withIndex()) {
+            val prefix = entry.key
+            val groupKeys = entry.value
+            sb.appendLine("  \"$prefix\": {")
+            val subKeys = groupKeys.map { it.substringAfter(".") }
+            for ((sIdx, sk) in subKeys.withIndex()) {
+                val comma = if (sIdx < subKeys.size - 1) "," else ""
+                sb.appendLine("    \"$sk\": \"\"$comma")
+            }
+            val comma = if (gIdx < groupEntries.size - 1) "," else ""
+            sb.appendLine("  }$comma")
+        }
+        sb.appendLine("}")
+        return sb.toString()
+    }
+
+    fun clearSnackbar() {
+        snackbarMessage = null
+    }
+
     fun cancelDecryption() {
         isDecrypting = false
     }
@@ -236,6 +319,8 @@ class MainViewModel(context: android.content.Context) {
 fun MainScreen(
     viewModel: MainViewModel,
     onPickFiles: () -> Unit,
+    onImportTranslation: () -> Unit,
+    onGenerateTemplate: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -246,6 +331,14 @@ fun MainScreen(
     // Read language state to make all tr() calls reactive to language changes
     @Suppress("UNUSED_EXPRESSION")
     currentLang
+
+    // Show snackbar when viewModel.snackbarMessage changes
+    LaunchedEffect(viewModel.snackbarMessage) {
+        viewModel.snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSnackbar()
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -286,6 +379,27 @@ fun MainScreen(
                                     },
                                 )
                             }
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(tr("translation.import")) },
+                                onClick = {
+                                    languageExpanded = false
+                                    onImportTranslation()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.FileOpen, contentDescription = null)
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(tr("translation.generateTemplate")) },
+                                onClick = {
+                                    languageExpanded = false
+                                    onGenerateTemplate()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Description, contentDescription = null)
+                                },
+                            )
                         }
                     }
                 },

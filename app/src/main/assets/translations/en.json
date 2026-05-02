@@ -35,5 +35,13 @@
   "lang": {
     "zh": "中文",
     "en": "English"
+  },
+  "translation": {
+    "import": "Import translation...",
+    "generateTemplate": "Generate template",
+    "importSuccess": "Translation imported: {0}",
+    "importFailed": "Failed to import translation",
+    "templateGenerated": "Translation template generated",
+    "templateFailed": "Failed to generate template"
   }
 }

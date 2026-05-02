@@ -35,5 +35,13 @@
   "lang": {
     "zh": "中文",
     "en": "English"
+  },
+  "translation": {
+    "import": "导入翻译包...",
+    "generateTemplate": "生成翻译模板",
+    "importSuccess": "翻译包已导入: {0}",
+    "importFailed": "翻译包导入失败",
+    "templateGenerated": "翻译模板已生成",
+    "templateFailed": "生成翻译模板失败"
   }
 }
