@@ -10,9 +10,23 @@ android {
     namespace = "com.ncmdump"
     compileSdk = 36
 
-    // Load signing config from keystore.properties (excluded from git)
+    // Load signing config from keystore.properties (local) or env vars (CI)
+    val envStore = System.getenv("KEYSTORE_BASE64")
     val keystoreProps = rootProject.file("keystore.properties")
-    if (keystoreProps.exists()) {
+    if (envStore != null) {
+        // CI: decode keystore from env var
+        val keystoreFile = rootProject.file("ncmdump-release.jks")
+        keystoreFile.writeBytes(java.util.Base64.getDecoder().decode(envStore))
+        signingConfigs {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("KEYSTORE_ALIAS") ?: ""
+                keyPassword = System.getenv("KEYSTORE_KEY_PASSWORD") ?: ""
+            }
+        }
+    } else if (keystoreProps.exists()) {
+        // Local: load from properties file
         val props = Properties()
         keystoreProps.inputStream().use { props.load(it) }
         signingConfigs {

@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       build_type:
-        description: 'Build type (debug/release)'
+        description: 'Build type'
         required: true
-        default: 'debug'
+        default: 'release'
         type: choice
         options:
           - debug
@@ -47,22 +47,25 @@ jobs:
         if: github.event.inputs.build_type == 'release'
         run: ./gradlew assembleRelease
         env:
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ncmdump-${{ github.event.inputs.build_type || 'debug' }}-apk
+          name: ncmdump-apk
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             app/build/outputs/apk/release/app-release.apk
 
   release:
     needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: >
+      github.event_name != 'pull_request'
+      && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+          || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -71,21 +74,27 @@ jobs:
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
-          name: ncmdump-debug-apk
+          name: ncmdump-apk
 
-      - name: Get version
-        id: version
+      - name: Determine build type
+        id: info
         run: |
           DATE=$(date '+%Y%m%d')
-          echo "tag=v${DATE}-debug" >> "$GITHUB_OUTPUT"
-          echo "name=ncmdump-v${DATE}-debug" >> "$GITHUB_OUTPUT"
+          if [ -f app-release.apk ]; then
+            echo "tag=v${DATE}" >> "$GITHUB_OUTPUT"
+            echo "name=ncmdump-v${DATE}-release" >> "$GITHUB_OUTPUT"
+            echo "files=app-release.apk" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v${DATE}-debug" >> "$GITHUB_OUTPUT"
+            echo "name=ncmdump-v${DATE}-debug" >> "$GITHUB_OUTPUT"
+            echo "files=app-debug.apk" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.name }}
-          files: |
-            app-debug.apk
+          tag_name: ${{ steps.info.outputs.tag }}
+          name: ${{ steps.info.outputs.name }}
+          files: ${{ steps.info.outputs.files }}
           generate_release_notes: true
           make_latest: true
