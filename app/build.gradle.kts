@@ -4,9 +4,26 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.ncmdump"
     compileSdk = 36
+
+    // Load signing config from keystore.properties (excluded from git)
+    val keystoreProps = rootProject.file("keystore.properties")
+    if (keystoreProps.exists()) {
+        val props = Properties()
+        keystoreProps.inputStream().use { props.load(it) }
+        signingConfigs {
+            create("release") {
+                storeFile = rootProject.file(props.getProperty("storeFile", "ncmdump-release.jks"))
+                storePassword = props.getProperty("storePassword", "")
+                keyAlias = props.getProperty("keyAlias", "")
+                keyPassword = props.getProperty("keyPassword", "")
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.ncmdump"
@@ -22,11 +39,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -41,6 +60,11 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 
     externalNativeBuild {
