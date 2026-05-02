@@ -85,14 +85,16 @@ jobs:
         id: info
         run: |
           DATE=$(date '+%Y%m%d')
-          if [ -f app-release.apk ]; then
+          RELEASE_APK=$(find . -name "app-release.apk" -print -quit)
+          DEBUG_APK=$(find . -name "app-debug.apk" -print -quit)
+          if [ -n "$RELEASE_APK" ]; then
             echo "tag=v${DATE}" >> "$GITHUB_OUTPUT"
             echo "name=ncmdump-v${DATE}-release" >> "$GITHUB_OUTPUT"
-            echo "files=app-release.apk" >> "$GITHUB_OUTPUT"
-          else
+            echo "files=${RELEASE_APK}" >> "$GITHUB_OUTPUT"
+          elif [ -n "$DEBUG_APK" ]; then
             echo "tag=v${DATE}-debug" >> "$GITHUB_OUTPUT"
             echo "name=ncmdump-v${DATE}-debug" >> "$GITHUB_OUTPUT"
-            echo "files=app-debug.apk" >> "$GITHUB_OUTPUT"
+            echo "files=${DEBUG_APK}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create Release
