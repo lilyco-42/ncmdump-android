@@ -41,7 +41,7 @@ jobs:
 
       - name: Decode keystore for release build
         if: github.event.inputs.build_type == 'release'
-        run: echo "$KEYSTORE_BASE64" | base64 -d > ncmdump-release.jks
+        run: printf '%s' "$KEYSTORE_BASE64" | base64 -d > ncmdump-release.jks
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
