@@ -102,15 +102,23 @@ jobs:
           TAG="${{ steps.info.outputs.tag }}"
           NAME="${{ steps.info.outputs.name }}"
           FILES="${{ steps.info.outputs.files }}"
+          REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
 
-          # Create release if it doesn't exist (ignore if already exists)
-          gh release create "$TAG" --title "$NAME" --generate-notes || true
+          # Create release via API (no local git needed)
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "$NAME" \
+            --target "$SHA" \
+            --generate-notes \
+            || true
 
           # Upload / overwrite assets
           IFS=',' read -ra FILE_LIST <<< "$FILES"
           for f in "${FILE_LIST[@]}"; do
             if [ -f "$f" ]; then
-              gh release upload "$TAG" "$f" --clobber
+              gh release upload "$TAG" "$f" --clobber \
+                --repo "$REPO"
             fi
           done
         env:
