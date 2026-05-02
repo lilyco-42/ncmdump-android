@@ -105,21 +105,30 @@ jobs:
           REPO="${{ github.repository }}"
           SHA="${{ github.sha }}"
 
-          # Create release via API (no local git needed)
-          gh release create "$TAG" \
-            --repo "$REPO" \
-            --title "$NAME" \
-            --target "$SHA" \
-            --generate-notes \
-            || true
+          # Create release only if it doesn't exist
+          if ! gh release view "$TAG" --repo "$REPO" &>/dev/null; then
+            echo "Creating new release $TAG"
+            gh release create "$TAG" \
+              --repo "$REPO" \
+              --title "$NAME" \
+              --target "$SHA" \
+              --generate-notes
+          else
+            echo "Release $TAG already exists, updating assets..."
+          fi
 
           # Upload / overwrite assets
-          IFS=',' read -ra FILE_LIST <<< "$FILES"
-          for f in "${FILE_LIST[@]}"; do
-            if [ -f "$f" ]; then
-              gh release upload "$TAG" "$f" --clobber \
-                --repo "$REPO"
+          if [ -f "$FILES" ]; then
+            gh release upload "$TAG" "$FILES" --clobber --repo "$REPO"
+          else
+            echo "File not found at $FILES, searching..."
+            APK=$(find . -name "*.apk" -print -quit)
+            if [ -n "$APK" ]; then
+              gh release upload "$TAG" "$APK" --clobber --repo "$REPO"
+            else
+              echo "No APK found!"
+              exit 1
             fi
-          done
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
