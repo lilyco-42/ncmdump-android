@@ -4,26 +4,25 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-import java.util.Base64
 import java.util.Properties
 
 android {
     namespace = "com.ncmdump"
     compileSdk = 36
 
-    // Load signing config from keystore.properties (local) or env vars (CI)
-    val envStore = System.getenv("KEYSTORE_BASE64")
+    val keystoreFile = rootProject.file("ncmdump-release.jks")
     val keystoreProps = rootProject.file("keystore.properties")
-    if (envStore != null) {
-        // CI: decode keystore from env var
-        val keystoreFile = rootProject.file("ncmdump-release.jks")
-        keystoreFile.writeBytes(java.util.Base64.getDecoder().decode(envStore))
-        signingConfigs {
-            create("release") {
-                storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEYSTORE_ALIAS") ?: ""
-                keyPassword = System.getenv("KEYSTORE_KEY_PASSWORD") ?: ""
+    if (keystoreFile.exists()) {
+        // CI: keystore decoded by workflow step, or local jks file
+        val envPassword = System.getenv("KEYSTORE_PASSWORD")
+        if (envPassword != null) {
+            signingConfigs {
+                create("release") {
+                    storeFile = keystoreFile
+                    storePassword = envPassword
+                    keyAlias = System.getenv("KEYSTORE_ALIAS") ?: ""
+                    keyPassword = System.getenv("KEYSTORE_KEY_PASSWORD") ?: ""
+                }
             }
         }
     } else if (keystoreProps.exists()) {
@@ -69,8 +68,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     buildFeatures {

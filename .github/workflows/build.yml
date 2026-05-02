@@ -39,6 +39,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Decode keystore for release build
+        if: github.event.inputs.build_type == 'release'
+        run: echo "$KEYSTORE_BASE64" | base64 -d > ncmdump-release.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
       - name: Build debug APK
         if: github.event.inputs.build_type != 'release'
         run: ./gradlew assembleDebug
@@ -47,7 +53,6 @@ jobs:
         if: github.event.inputs.build_type == 'release'
         run: ./gradlew assembleRelease
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEYSTORE_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
           KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
