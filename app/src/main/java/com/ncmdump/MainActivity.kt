@@ -240,6 +240,13 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var languageExpanded by remember { mutableStateOf(false) }
+    var currentLang by remember { mutableStateOf(TranslationService.translator.languageCode) }
+
+    // Read language state to make all tr() calls reactive to language changes
+    @Suppress("UNUSED_EXPRESSION")
+    currentLang
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -249,6 +256,37 @@ fun MainScreen(
                         Icon(Icons.Default.MusicNote, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(tr("app.name"))
+                    }
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { languageExpanded = true }) {
+                            Icon(Icons.Default.Language, contentDescription = null)
+                        }
+                        DropdownMenu(
+                            expanded = languageExpanded,
+                            onDismissRequest = { languageExpanded = false },
+                        ) {
+                            TranslationService.translator.availableLanguages().forEach { code ->
+                                DropdownMenuItem(
+                                    text = { Text(tr("lang.$code")) },
+                                    onClick = {
+                                        TranslationService.translator.setLanguage(code)
+                                        currentLang = code
+                                        languageExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        if (code == currentLang) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

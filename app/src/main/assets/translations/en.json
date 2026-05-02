@@ -31,5 +31,9 @@
   },
   "label": {
     "outputDir": "Output Directory"
+  },
+  "lang": {
+    "zh": "中文",
+    "en": "English"
   }
 }
