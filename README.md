@@ -13,7 +13,8 @@ Android 平台上的网易云音乐 .ncm 文件解密工具。
 - 提取专辑封面图为独立文件
 - 自动保存到设备 Music/ncmdump/ 目录
 - 批量选择、批量解密
-- 模块化翻译（中文 / 英文）
+- 应用内语言切换（中文 / English）
+- 自定义翻译包导入 / 模板生成
 
 ## 下载
 
@@ -53,31 +54,44 @@ APK 产出在 `app/build/outputs/apk/debug/app-debug.apk`
 
 ## 翻译系统
 
-支持模块化翻译，接口与实现分离。
+支持模块化翻译，接口与实现分离。内置中文（zh）和英文（en）。
 
-### 添加语言
+### 应用内切换语言
+
+TopAppBar 右侧语言按钮 → 选择目标语言，立即生效。
+
+### 自定义翻译包
+
+在应用内生成翻译模板 JSON 文件，编辑后导入即可添加新语言或覆盖现有翻译：
+
+1. **生成模板**：语言菜单 → "生成翻译模板" → 选择保存位置
+2. **编辑模板**：打开生成的 JSON，将 value 字段翻译为目标语言
+3. **导入模板**：语言菜单 → "导入翻译包..." → 选择编辑后的 JSON 文件
+
+模板格式：
+```json
+{
+  "app.name": "我的翻译",
+  "button.selectFiles": "选择文件",
+  ...
+}
+```
+
+翻译文件存储在应用内部目录，导入后立即生效。
+
+### 添加内置语言
 
 在 `app/src/main/assets/translations/` 下新建 `{语言代码}.json`，参照 `zh.json` 或 `en.json` 的键结构填写。
 
-### 切换语言
+### 代码调用
 
 ```kotlin
-// MainActivity.kt
-TranslationService.init(this, languageCode = "zh")  // 中文
-TranslationService.init(this, languageCode = "en")  // 英文
-TranslationService.init(this, languageCode = "ja")  // 日文（需先添加 ja.json）
-```
+// 初始化
+TranslationService.init(this, languageCode = "zh")
 
-### 自定义翻译源
-
-实现 `Translator` 接口，可以从任意数据源加载翻译：
-
-```kotlin
-class RemoteTranslator : Translator {
-    override fun translate(key: String, vararg args: Any?) = /* 从远程 API 获取 */
-    override val languageCode = "fr"
-}
-TranslationService.setTranslator(RemoteTranslator())
+// 使用
+TranslationService.tr("app.name")
+tr("status.success")  // 顶层函数，Composable 中可直接调用
 ```
 
 ## 项目结构
@@ -94,11 +108,11 @@ TranslationService.setTranslator(RemoteTranslator())
 │       │   ├── jni_bridge.cpp       ← JNI 桥接层
 │       │   └── CMakeLists.txt       ← NDK 构建配置
 │       ├── java/com/ncmdump/
-│       │   ├── MainActivity.kt      ← Compose UI + 文件选择 + 导出
+│       │   ├── MainActivity.kt      ← Compose UI + 文件选择 + 导出 + 语言切换
 │       │   ├── NcmDecryptor.kt      ← JNI 声明 + Kotlin 封装
 │       │   └── i18n/                ← 翻译模块
 │       │       ├── Translator.kt          ← 接口
-│       │       ├── JsonTranslator.kt      ← JSON 文件实现
+│       │       ├── JsonTranslator.kt      ← JSON 文件实现（导入/生成模板）
 │       │       └── TranslationService.kt  ← 全局访问点
 │       └── res/                     ← 资源文件
 ├── .github/workflows/build.yml      ← CI 工作流
@@ -114,7 +128,7 @@ TranslationService.setTranslator(RemoteTranslator())
 | 元数据写入 | taglib | Android MediaStore API |
 | 封面图 | 嵌入音频文件 | 提取为独立 jpg/png 文件 |
 | 构建 | CMake + vcpkg | Gradle + NDK |
-| 翻译 | 无 | 模块化 i18n 系统 |
+| 翻译 | 无 | 模块化 i18n 系统，应用内切换语言，自定义翻译包导入 |
 
 ## 致谢
 

@@ -97,11 +97,21 @@ jobs:
             echo "files=${DEBUG_APK}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.info.outputs.tag }}
-          name: ${{ steps.info.outputs.name }}
-          files: ${{ steps.info.outputs.files }}
-          generate_release_notes: true
-          make_latest: true
+      - name: Create or update release
+        run: |
+          TAG="${{ steps.info.outputs.tag }}"
+          NAME="${{ steps.info.outputs.name }}"
+          FILES="${{ steps.info.outputs.files }}"
+
+          # Create release if it doesn't exist (ignore if already exists)
+          gh release create "$TAG" --title "$NAME" --generate-notes || true
+
+          # Upload / overwrite assets
+          IFS=',' read -ra FILE_LIST <<< "$FILES"
+          for f in "${FILE_LIST[@]}"; do
+            if [ -f "$f" ]; then
+              gh release upload "$TAG" "$f" --clobber
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}

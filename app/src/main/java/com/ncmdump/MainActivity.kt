@@ -118,6 +118,7 @@ class MainViewModel(context: android.content.Context) {
     var outputDir by mutableStateOf<File?>(null)
         private set
 
+
     init {
         outputDir = File(appContext.cacheDir, "ncmdump_output").also { it.mkdirs() }
     }
